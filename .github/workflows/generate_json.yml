@@ -9,24 +9,17 @@ jobs:
       - name: Generate JSON
         run: |
           echo "[" > wallpapers.json
-          # 1. This finds images in ANY subfolder, ignoring case (-iname)
-          # 2. It excludes the .github folder and the root directory
-          find . -mindepth 2 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.jpeg" \) | grep -v ".github" | while read file; do
-            
-            # This gets the folder name (e.g., 'Nature')
-            category=$(echo "$file" | cut -d'/' -f2)
-            
-            # This gets the filename (e.g., 'forest.jpg')
+          # Find all images inside the repo, excluding the hidden .github folder
+          find . -mindepth 2 -not -path '*/.*' -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" \) | while read file; do
+            # Get the folder name as the category (the folder containing the file)
+            category=$(basename $(dirname "$file"))
             name=$(basename "$file")
-            
-            # This creates the URL and handles spaces in filenames
             url="https://raw.githubusercontent.com/${{ github.repository }}/main/${file#./}"
+            # Fix spaces for URLs
             url=$(echo "$url" | sed 's/ /%20/g')
-            
             echo "  {\"name\": \"$name\", \"category\": \"$category\", \"url\": \"$url\"}," >> wallpapers.json
           done
-          
-          # Fix the JSON formatting (remove last comma)
+          # Remove trailing comma and close JSON
           sed -i '$ s/,$//' wallpapers.json
           echo "]" >> wallpapers.json
       - name: Commit files
