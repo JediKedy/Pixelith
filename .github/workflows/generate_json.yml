@@ -1,28 +1,15 @@
-name: Generate Wallpaper JSON
-on: [push] # Runs every time you upload a file
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Generate JSON
+- name: Generate JSON
         run: |
           echo "[" > wallpapers.json
-          # This finds all jpg/png files in subfolders
-          find . -type f \( -iname "*.jpg" -o -iname "*.png" \) | while read file; do
-            # Extract folder name as category
-            category=$(dirname "$file" | cut -d'/' -f2)
+          # Find images specifically inside subfolders of a 'Wallpapers' directory
+          find Wallpapers -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.webp" \) | while read file; do
+            # This gets 'Nature' from 'Wallpapers/Nature/image.jpg'
+            category=$(echo "$file" | cut -d'/' -f2)
             name=$(basename "$file")
-            url="https://raw.githubusercontent.com/${{ github.repository }}/main/${file#./}"
+            # Encode URL properly for spaces
+            url="https://raw.githubusercontent.com/${{ github.repository }}/main/${file// /%20}"
             echo "  {\"name\": \"$name\", \"category\": \"$category\", \"url\": \"$url\"}," >> wallpapers.json
           done
-          sed -i '$ s/,$//' wallpapers.json # Remove last comma
+          # Remove the last comma and close the bracket
+          sed -i '$ s/,$//' wallpapers.json
           echo "]" >> wallpapers.json
-      - name: Commit files
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add wallpapers.json
-          git commit -m "Update wallpapers.json" || exit 0
-          git push
