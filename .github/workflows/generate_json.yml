@@ -1,0 +1,28 @@
+name: Generate Wallpaper JSON
+on: [push] # Runs every time you upload a file
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate JSON
+        run: |
+          echo "[" > wallpapers.json
+          # This finds all jpg/png files in subfolders
+          find . -type f \( -iname "*.jpg" -o -iname "*.png" \) | while read file; do
+            # Extract folder name as category
+            category=$(dirname "$file" | cut -d'/' -f2)
+            name=$(basename "$file")
+            url="https://raw.githubusercontent.com/${{ github.repository }}/main/${file#./}"
+            echo "  {\"name\": \"$name\", \"category\": \"$category\", \"url\": \"$url\"}," >> wallpapers.json
+          done
+          sed -i '$ s/,$//' wallpapers.json # Remove last comma
+          echo "]" >> wallpapers.json
+      - name: Commit files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add wallpapers.json
+          git commit -m "Update wallpapers.json" || exit 0
+          git push
