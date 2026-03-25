@@ -1,4 +1,12 @@
-- name: Generate JSON
+name: Generate Wallpaper JSON
+on: [push] # Runs every time you upload a file
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate JSON
         run: |
           echo "[" > wallpapers.json
           # Find images specifically inside subfolders of a 'Wallpapers' directory
@@ -13,3 +21,10 @@
           # Remove the last comma and close the bracket
           sed -i '$ s/,$//' wallpapers.json
           echo "]" >> wallpapers.json
+      - name: Commit files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add wallpapers.json
+          git commit -m "Update wallpapers.json" || exit 0
+          git push
